@@ -73,6 +73,7 @@ dav-4, layer8-X L - - - 512 29 × 38 layer8-Y
 """
 
 import torch.nn as nn
+import torch
 
 class DepthAttention(nn.Module):
     def __init__(self):
@@ -99,3 +100,34 @@ class DepthAttention(nn.Module):
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1, stride=1, padding=0),
             nn.BatchNorm2d(num_features=512)
         )
+
+    def forward(self, x):
+        # x: B x 512 x H x W
+        
+        orange = self.orange_conv(x)
+        green_1 = self.green1_conv(x)
+        green1_bn = self.green1_bn(green_1)
+        green1_gamma = self.green1_gamma(green_1)
+        green1_beta = self.green1_beta(green_1)
+        
+        blue_1 = self.blue1(x)
+        blue_1_bn = self.blue1_bn(blue_1)
+        blue1_gamma = self.blue1_gamma(blue_1)
+        blue1_beta = self.blue1_beta(blue_1)
+
+        green_1bn_gamma = green1_bn * blue1_gamma
+        green_1_denorm = green_1bn_gamma + blue1_beta
+        green2 = self.green2(green_1_denorm)
+
+        blue_1bn_gamma = blue_1_bn * green1_gamma
+        blue_1_denorm = blue_1bn_gamma + green1_beta
+        blue2 = self.blue2(blue_1_denorm)
+        # torch.einsum is used to calculate the outer product with batches, as torch.outer doesn't broadcast
+        dav_1 = torch.einsum('bi,bj->bij', (green2, blue2)) # will need to be reshaped for this operation
+        dav_2 = torch.sigmoid(dav_1)
+        dav3 = torch.einsum('bi,bj->bij', (dav_2, orange))
+        dav_4 = self.dav4(dav3)
+        out = dav_4 + x
+
+        return out
+
