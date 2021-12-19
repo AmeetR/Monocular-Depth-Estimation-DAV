@@ -127,7 +127,7 @@ class DepthAttention(nn.Module):
         dav_2 = torch.sigmoid(dav_1)
         dav3 = torch.einsum('bi,bj->bij', (dav_2, orange))
         dav_4 = self.dav4(dav3)
-        out = dav_4 + x
+        out = dav_4 + x # out should be a 4D Tensor of shape B x H x W x H x W
 
         return out
 
