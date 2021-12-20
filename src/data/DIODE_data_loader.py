@@ -2,7 +2,7 @@ import torch
 import pandas as pd
 from torch.utils.data import Dataset
 import os
-from DIODE_processing import DIODE_processing
+from data.DIODE_processing import DIODE_processing
 import cv2
 import numpy as np
 
